@@ -1,4 +1,4 @@
-# Aurabot QQ 抖音增强版 — 卸载脚本（Windows PowerShell）
+﻿# Aurabot QQ 抖音增强版 — 卸载脚本（Windows PowerShell）
 # 做法：删掉增强版模块，恢复 install.ps1 当时做的备份，回到原版状态。
 # 用法：.\uninstall.ps1 -BackupDir 'C:\Users\Administrator\.dsh\plugins-data\aurabot\backups\douyin-plus-20261115-xxxxxx'
 

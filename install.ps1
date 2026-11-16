@@ -1,4 +1,4 @@
-# Aurabot QQ 抖音增强版 — 安装脚本（Windows PowerShell）
+﻿# Aurabot QQ 抖音增强版 — 安装脚本（Windows PowerShell）
 # 做法：先备份 Aurabot 配置 + 抖音模块数据，再把增强版装进社区模块目录。
 # 任何一步失败就回滚备份，不动原版。装之前请先关掉 DSH。
 # 用法：右键 → 使用 PowerShell 运行，或在 PowerShell 里：.\install.ps1
