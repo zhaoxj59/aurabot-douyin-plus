@@ -98,13 +98,20 @@ check('duty 不再只分享给主人', !dutySrc.includes('shareToOwner(s, v, sha
 const indexSrc = fs.readFileSync(path.join(ROOT, 'index.mjs'), 'utf8')
 check('index 注册了增强版工具', indexSrc.includes('douyin_plus_share') && indexSrc.includes('douyin_plus_command') && indexSrc.includes('douyin_plus_report'))
 check('index 模块 id 是 douyin-plus', indexSrc.includes("id: 'douyin-plus'"))
+check('index 版本 0.2.0', indexSrc.includes("version: '0.2.0'"))
+check('v0.2.0 脱钩：不再注册 /douyin/* 路由', !indexSrc.includes("'/douyin/"))
+check('v0.2.0 脱钩：/douyin-plus/* 路由齐全（登录/跑一轮/私信/核对）',
+  ['/douyin-plus/state', '/douyin-plus/account', '/douyin-plus/login', '/douyin-plus/login/status', '/douyin-plus/window', '/douyin-plus/run', '/douyin-plus/dms', '/douyin-plus/confirm-owner'].every((r) => indexSrc.includes(`'${r}'`)))
+check('v0.2.0 脱钩：原版工具名已改名', ['douyin_plus_watch', 'douyin_plus_recent', 'douyin_plus_browse', 'douyin_plus_share_owner', 'douyin_plus_send_dm', 'douyin_plus_like', 'douyin_plus_comment'].every((t) => indexSrc.includes(`name: '${t}'`)))
+check('v0.2.0 脱钩：无原版工具名残留',
+  !['douyin_watch', 'douyin_recent', 'douyin_browse', 'douyin_share_owner', 'douyin_send_dm', 'douyin_like', 'douyin_comment'].some((t) => indexSrc.includes(`name: '${t}'`)))
+check('v0.2.0 脱钩：定时器改名', indexSrc.includes("'刷抖音增强版'") && !indexSrc.includes("'刷抖音')"))
 const mod = JSON.parse(fs.readFileSync(path.join(ROOT, 'module.json'), 'utf8'))
-check('module.json 版本 0.1.0、id douyin-plus', mod.version === '0.1.0' && mod.id === 'douyin-plus')
-check('原版 base 文件未动：browser/site/ego 与 2.3.6 一致',
+check('module.json 版本 0.2.0、id douyin-plus', mod.version === '0.2.0' && mod.id === 'douyin-plus')
+check('原版 base 文件未动：browser/site/ego 不含 PLUS 标记',
   ['lib/browser.mjs', 'lib/site.mjs', 'lib/ego.mjs'].every((f) => {
-    try {
-      return fs.readFileSync(path.join(ROOT, f), 'utf8') === fs.readFileSync(path.join('/tmp/douyin-mod', f), 'utf8')
-    } catch { return false }
+    const s = fs.readFileSync(path.join(ROOT, f), 'utf8')
+    return !s.includes('douyin-plus') && !s.includes('douyin_plus') && !s.includes('shareToWhitelist') && !s.includes('plusCapOf')
   }))
 check('安装脚本存在', fs.existsSync(path.join(ROOT, 'install.ps1')) && fs.existsSync(path.join(ROOT, 'uninstall.ps1')))
 

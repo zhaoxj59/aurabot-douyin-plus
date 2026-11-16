@@ -1,5 +1,7 @@
 const __lib = globalThis.aurabot.lib // 插件内部源码（复制出来后靠它找到插件里的文件）
-// 增强版（Aurabot QQ 抖音增强版 v0.1.0）：基于社区模块 douyin 2.3.6（MIT）改。
+// 增强版（Aurabot QQ 抖音增强版 v0.2.0）：基于社区模块 douyin 2.3.6（MIT）改。
+// v0.2.0 改名脱钩：路由、工具名、定时器名全用 douyin-plus 专属名，可与原版共存；
+// 配置仍读 douyin 区（面板设置页、登录状态、Edge 资料都在那），改名会弄坏设置页、丢登录，故不动。
 // 基础能力（专用浏览器、登录、定时刷、点赞评论、验证码熔断）沿用原版；
 // 新增：分享白名单（抖音好友，可选）+ 黑名单最高优先、评论区 @ 白名单、
 // 方案 §4 额度表（可配置）、内容分类（科技/AI 优先，购物/直播跳过）、
@@ -12,7 +14,7 @@ const { profileToolVisible, profilePermits } = __lib('chat/access.js')
 export default {
   id: 'douyin-plus',
   name: '刷抖音增强版',
-  version: '0.1.0',
+  version: '0.2.0',
   api: 1,
   description: 'Aurabot 抖音增强版：自主刷抖音、筛选优质内容、点赞评论，分享给白名单里的抖音好友（抖音私信），评论区 @ 白名单，QQ 口令控制，每日额度与熔断。',
   tab: 'douyin-plus',
@@ -22,7 +24,7 @@ export default {
     const setOwner = (owner) => api.setConfig((cur) => ({ ...cur, douyin: { ...cur.douyin, owner } }))
     // 出站治理面：旧主仓没有 api.proactive 时为 undefined，duty 内部可选链降级回 hub.sendText。
     const dy = createDouyin({ getConfig: api.config, setOwner, hub, memory: api.lazy('memory'), log: api.log, proactive: api.proactive })
-    api.every(60_000, () => dy.tick(), '刷抖音')
+    api.every(60_000, () => dy.tick(), '刷抖音增强版')
     api.onDispose(() => dy.dispose())
 
     api.tool(({ chat, sessionId }) => {
@@ -39,14 +41,14 @@ export default {
       const tools = []
       if (profileToolVisible(cfg, 'douyinBrowse', chat)) {
         tools.push(defineTool({
-          name: 'douyin_watch',
+          name: 'douyin_plus_watch',
           description: '打开一个抖音视频看看：读标题、分类、内容摘要和热评，看完再聊。别人发来抖音链接（v.douyin.com 短链也行）时用。',
           properties: { link: str('抖音视频链接或 v.douyin.com 短链') },
           required: ['link'],
           execute: guarded('douyinBrowse', ({ link }) => dy.watch(String(link || ''))),
         }))
         tools.push(defineTool({
-          name: 'douyin_recent',
+          name: 'douyin_plus_recent',
           description: '查最近刷过的抖音视频及真实链接。有人问刚才刷了什么、要分享或评论刚看过的视频时先用；没有记录就如实说。',
           properties: {},
           execute: guarded('douyinBrowse', async () => {
@@ -55,14 +57,14 @@ export default {
           }),
         }))
         tools.push(defineTool({
-          name: 'douyin_browse',
+          name: 'douyin_plus_browse',
           description: '现在去刷一会儿抖音推荐，有人让你去刷抖音、找个视频给他时用。只是开始刷：要几分钟，刷完系统会把结果（看了什么、分享了哪个）告诉你，在那之前别说已经分享了 / 已经发了。主人开口要的话，这轮一定会挑一个分享给主人。',
           properties: {},
           execute: guarded('douyinBrowse', async () => dy.browse({ ownerAsked: hub.turnHasOwner(sessionId), report: chat })),
         }))
       }
       if (profileToolVisible(cfg, 'douyinShareOwner', chat)) tools.push(defineTool({
-        name: 'douyin_share_owner',
+        name: 'douyin_plus_share_owner',
         description: '主人明确要求分享某个抖音视频给自己时用；link 填真实链接或视频 id。发到面板设置的抖音私信、QQ 或两边。',
         properties: { link: str('抖音视频链接或视频 id') },
         required: ['link'],
@@ -111,21 +113,21 @@ export default {
         }))
       }
       if (profileToolVisible(cfg, 'douyinDm', chat)) tools.push(defineTool({
-        name: 'douyin_send_dm',
+        name: 'douyin_plus_send_dm',
         description: '主人明确要求你给某个抖音用户发私信时用。target 填对方的主页链接或抖音号，text 是要说的话（300 字以内）。只发给主人指定的人。',
         properties: { target: str('对方抖音主页链接或抖音号'), text: str('要说的话') },
         required: ['target', 'text'],
         execute: guarded('douyinDm', ({ target, text }) => dy.directDm({ target, text })),
       }))
       if (profileToolVisible(cfg, 'douyinLike', chat)) tools.push(defineTool({
-        name: 'douyin_like',
+        name: 'douyin_plus_like',
         description: '给一个抖音视频点赞。有人明确让你点赞时用。link 填视频链接。',
         properties: { link: str('抖音视频链接') },
         required: ['link'],
         execute: guarded('douyinLike', ({ link }) => dy.likeVideo(String(link || ''))),
       }))
       if (profileToolVisible(cfg, 'douyinComment', chat)) tools.push(defineTool({
-        name: 'douyin_comment',
+        name: 'douyin_plus_comment',
         description: '在一个抖音视频下发评论。有人明确让你去评论时用。link 填视频链接，text 是评论内容（100 字以内）。',
         properties: { link: str('抖音视频链接'), text: str('评论内容') },
         required: ['link', 'text'],
@@ -134,9 +136,8 @@ export default {
       return tools
     })
 
-    // 面板：/douyin/state 只读文件，绝不为了显示状态去开浏览器
-    api.route('/douyin/state', async () => ({ ok: true, ...dy.state() }))
-    // PLUS 路由（增强版自己的状态 / 名单 / 额度 / 汇报）
+    // 面板路由全走 /douyin-plus/*（v0.2.0 改名脱钩，不再注册 /douyin/*，可与原版共存）。
+    // /douyin-plus/state 只读文件，绝不为了显示状态去开浏览器
     api.route('/douyin-plus/state', async () => ({ ok: true, ...dy.state() }))
     api.route('/douyin-plus/people', async () => dy.peopleList())
     api.route('/douyin-plus/quotas', async () => dy.quotaStatus())
@@ -153,16 +154,16 @@ export default {
       const b = await http.body(req).catch(() => ({}))
       return dy.removePerson(String(b?.kind ?? 'share'), String(b?.secUid ?? ''))
     })
-    api.route('/douyin/account', async () => dy.account(true))
-    api.route('/douyin/login', async () => dy.loginStep(true))
-    api.route('/douyin/login/status', async () => dy.loginStep(false))
-    api.route('/douyin/window', async (req) => {
+    api.route('/douyin-plus/account', async () => dy.account(true))
+    api.route('/douyin-plus/login', async () => dy.loginStep(true))
+    api.route('/douyin-plus/login/status', async () => dy.loginStep(false))
+    api.route('/douyin-plus/window', async (req) => {
       const b = await http.body(req).catch(() => ({}))
       return dy.showWindow(Boolean(b?.visible))
     })
-    api.route('/douyin/run', async () => dy.browse())
-    api.route('/douyin/dms', async () => dy.checkOwnerDms())
-    api.route('/douyin/confirm-owner', async (req) => {
+    api.route('/douyin-plus/run', async () => dy.browse())
+    api.route('/douyin-plus/dms', async () => dy.checkOwnerDms())
+    api.route('/douyin-plus/confirm-owner', async (req) => {
       const b = await http.body(req).catch(() => ({}))
       return dy.confirmOwner(String(b?.input ?? api.config().douyin.owner.input ?? ''))
     })
